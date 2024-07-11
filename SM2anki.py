@@ -32,8 +32,8 @@ def tag(s):
     return s
 
 def createnotes():    
-    fout = codecs.open("D:/AdvEng2018.txt", mode="w", encoding="utf-8")
-    tree = ET.parse("D:/adveng 2018 (AE2018).xml")
+    fout = codecs.open("D:/AdvEng2018.txt", mode="w", encoding="utf-8") #hardcoded
+    tree = ET.parse("D:/learning (grammarcards).xml") #hardcoded
     #tree = ET.parse("D:/AdvEng 2018 (all elements).xml")
     root = tree.getroot()
     c = 0
@@ -67,10 +67,16 @@ def createnotes():
         elif typ == "Item":
             lastwas = False
             #print(seq, ord)
+            #c += 1
             content = entry.find('./Content')
         
             question = content.find('./Question').text
             question = HTMLEntitiesToUnicode(question)
+            
+            question = re.sub(r'#SuperMemo Reference:(.+)',"",question)
+            if question[:2] == "##":
+                question = question[2:]
+                #print(question)
             
             answer = content.find('./Answer')
             answer = HTMLEntitiesToUnicode(answer.text) if answer is not None else ""
@@ -81,19 +87,31 @@ def createnotes():
             images = content.findall('./Image')
             #print(images)
             for image in images:
-                imageurl = image.find('./URL').text
+                imageurl = image.find('./URL').text.replace("[SecondaryStorage]","").replace("\\","/")
+                imageurl = imageurl.replace("c:/users/guill/supermemo/sm184/systems/learning/elements/","") #hardcoded
                 imagetitle = image.find('./Name').text
+                imagetitle = re.sub(r"(#.+)","",imagetitle).strip()
+                
+                
                 imageext = imageurl[-3:]
                 imagename = re.search(r'([^\\]+)\.[^\\]+$',imageurl).group(1)
                 imageback = image.find('./Answer') #image is seen only on backside
                 #imagetag = f'<img src="{imagename}.{imageext}" alt="{imagetitle}">'
                 imagetag = f'<img src="{clean(imagetitle)}.{imageext}" alt="{imagetitle}">'
 
-                #print([imagetitle, imagename])
+                #print([imagetitle, imageurl])
                 #copy and rename the media file
-                before = "D:/Anki2a/AE2018/collection.media/" + imagename+"."+imageext
-                after = "D:/Anki2a/AE2018/collection.media2/" + clean(imagetitle)+"."+imageext
-                shutil.copy2(before, after)
+                
+                before = "C:/Users/guill/supermemo/SM184/systems/learning/elements/" + imageurl #hardcoded
+                #before = "D:/learning (grammarcards)_files/Elements/" + imageurl
+                after = "D:/Anki2a/myitems/collection.media/" + clean(imagetitle)+"."+imageext #hardcoded
+
+                try:
+                    shutil.copy2(before, after)
+                except:
+                    print([before, after])
+                    c+=1
+                
                 
                 if imageback is not None:
                     aimg.append(imagetag)
@@ -106,7 +124,9 @@ def createnotes():
                 #print("content:")
                 #print_content(sound)
                 soundtitle = sound.find('./Name').text
-                soundurl = sound.find('./URL').text
+                soundtitletitle = re.sub(r"(#.+)","",soundtitle).strip()
+                soundurl = sound.find('./URL').text.replace("[SecondaryStorage]","").replace("\\","/")
+                soundurl = soundurl.replace("c:/users/guill/supermemo/sm184/systems/learning/elements/","") #hardcoded username
                 soundname = re.search(r'([^\\]+)\.[^\\]+$',soundurl).group(1)
                 #avoid names that are too long
                 if len(soundtitle)>128:
@@ -115,13 +135,16 @@ def createnotes():
                 soundtag = f"[sound:{clean(soundtitle)}.{soundext}]"
                 
                 #copy and rename the media file
+                #print(soundurl)
                 
-                before2 = "D:/Anki2a/AE2018/collection.media/" + soundname+"."+soundext
-                after2 = "D:/Anki2a/AE2018/collection.media2/" + clean(soundtitle) + "." + soundext
+                before2 = "C:/Users/guill/supermemo/SM184/systems/learning/elements/" + soundurl #hardcoded
+                #before2 = "D:/learning (grammarcards)_files/Elements/" + soundurl
+                after2 = "D:/Anki2a/myitems/collection.media/" + clean(soundtitle) + "." + soundext #hardcoded
                 try:
                     shutil.copy2(before2, after2)
                 except:
                     print([before2, after2])
+                    c+=1
                 
                 audioback = sound.find('./Answer')
 
@@ -132,12 +155,15 @@ def createnotes():
                     qaudio.append(soundtag)
 
             currenttag = currenttag.replace("::Advanced_English","AE2018")
-            note = [ord, question, answer, "".join(qimg), "".join(aimg),
-                              "".join(qaudio), "".join(aaudio), currenttag]
+            note = [question, answer, "".join(qimg), "".join(aimg),
+                              "".join(qaudio), "".join(aaudio)]
+            
+            
+            #print(len(note))
             #print(note)
             #print(currenttag)
             fout.write("\t".join(note)+"\r\n")
-        
+    print(str(c))
     fout.close()
     print(count)
 
